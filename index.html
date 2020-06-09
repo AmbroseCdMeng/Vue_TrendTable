@@ -156,21 +156,22 @@
         var app = new Vue({
             el: "#app",
             data: {
-                title: '',
-                start_date: '',
-                end_date: '',
-                tem_data: {},
-                hum_data: {},
-                min_tem: 0,
-                max_tem: 0,
-                flag_tems: [],
-                flag_tem_stem: 1,
-                min_hum: 0,
-                max_hum: 0,
-                flag_hums: [],
-                flag_hum_stem: 10
+                title: '',//表格标题
+                start_date: '',//表头的开始日期
+                end_date: '',//表头结束日期
+                tem_data: {},//温度数据
+                hum_data: {},//湿度数据
+                min_tem: 0,//最小温度（左侧表头） 如为空，则取 tem_data 中值得最小值
+                max_tem: 0,//最大温度（左侧表头） 如为空，则取 tem_data 中值的最大值
+                flag_tems: [],//温度数组（左侧表头） 如不为空，则优先使用数组内容作为表头，如为空，则根据 min_tem 和 max tem 和 flag_tem_step 自动计算填充
+                flag_tem_step: 1,//温度步长，当 flag_tems 为空时，根据最大最小值计算填充表头数组时的间隔
+                min_hum: 0,// 最小湿度
+                max_hum: 0,// 最大湿度
+                flag_hums: [],//湿度数组
+                flag_hum_step: 10//湿度步长
             },
             methods: {
+                //根据日期区间获取所有日期，返回数组
                 getAllDays() {
                     var allDays = [];
                     var a = (this.start_date || '').split('-');
@@ -182,6 +183,7 @@
                     }
                     return allDays;
                 },
+                //温度数组为空时，自动根据其他设定填充温度数组
                 fill_flag_tem() {
                     if (this.flag_tems.length == 0) {
 
@@ -192,10 +194,11 @@
 
                         while (this.min_tem <= this.max_tem) {
                             this.flag_tems.push(this.min_tem)
-                            this.min_tem = this.min_tem + this.flag_tem_stem
+                            this.min_tem = this.min_tem + this.flag_tem_step
                         }
                     }
                 },
+                //湿度数组为空时，自动根据其他设定填充温度数组
                 fill_flag_hum() {
                     if (this.flag_hums.length == 0) {
                         if (!this.max_hum)
@@ -205,23 +208,27 @@
                         while (this.min_hum <= this.max_hum) {
                             this.flag_hums.push(this.min_hum)
                             this.flag_hums.push(this.min_hum)
-                            this.min_hum = this.min_hum += this.flag_hum_stem
+                            this.min_hum = this.min_hum += this.flag_hum_step
                         }
                     }
                 }
             },
             filters: {
+                //日期过滤（dd）
                 longDateToDay: function (longDate) {
                     return fDate(new Date(Date.parse(longDate)).getDate());
                 },
+                //日期过滤（mm）
                 longDateToMonth: function (longDate) {
                     return fDate(new Date(Date.parse(longDate)).getMonth() + 1);
                 }
             },
             computed: {
+                //日期数组，后台返回的所有键，温湿度去重合并，用于表头取值
                 date_list() {
                     return Array.from(new Set(Object.keys(this.tem_data).concat(Object.keys(this.hum_data))))
                 },
+                //温度数组组合
                 tem_datas() {
                     var t = []
                     this.flag_tems.map((flag) => {
@@ -231,6 +238,7 @@
                     })
                     return t
                 },
+                //湿度数组组合
                 hum_datas() {
                     var t = []
                     this.flag_hums.map((flag) => {
@@ -246,6 +254,7 @@
                 this.fill_flag_hum()
             },
             created() {
+                //以下为示例数据，通常从 ajax 获取
                 this.title = "仓库温湿度走势记录表"
                 this.start_date = "2020-06-01"
                 this.end_date = "2020-06-30"
@@ -253,12 +262,12 @@
                 this.flag_tems = []
                 this.max_tem = ''
                 this.min_tem = ''
-                this.flag_tem_stem = 1
+                this.flag_tem_step = 1
 
                 this.flag_hums = []
                 this.max_hum = 90
                 this.min_hum = 50
-                this.flag_hum_stem = 10
+                this.flag_hum_step = 10
 
                 this.tem_data = {
                     "2020-06-01-A": 22,
@@ -327,7 +336,7 @@
                     "2020-06-14-B": 80,
                     "2020-06-15-A": 80,
                     "2020-06-15-B": 90,
-                    "2020-06-16-A": 80,
+                    "2020-06-16-A": 50,
                     "2020-06-16-B": 80,
                     "2020-06-17-A": 60,
                     "2020-06-17-B": 80,
