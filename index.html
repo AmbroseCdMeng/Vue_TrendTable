@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<head>
+    <!-- <meta http-equiv="Refresh" content="5" /> -->
+    <title></title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.11/vue.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+        }
+
+        table {
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+            text-align: center;
+            font-size: 6px;
+        }
+
+        table caption {
+            font-size: 18px;
+            font-weight: 600;
+            padding-bottom: 10px;
+        }
+
+        table td,
+        table th {
+            border: 1px solid #cad9ea;
+            color: #666;
+            max-height: 30px;
+            width: 30px;
+        }
+
+        table thead th {
+            background-color: #CCE8EB;
+        }
+
+        table tr:nth-child(odd) {
+            background: #fff;
+        }
+
+        table tr:nth-child(even) {
+            background: #F5FAFA;
+        }
+
+        table .thead-col {
+            max-width: 65px;
+        }
+
+        table td img{
+            width: 63px;
+            height: 34px;
+        }
+
+        p {
+            font-size: 4px;
+        }
+    </style>
+
+<body>
+    <div id="app">
+        <table style="height: 53%;">
+            <caption v-text="title"></caption>
+            <thead>
+                <tr>
+                    <td rowspan="2" class="thead-col">
+                        <img src="./src/th1.png" alt="">
+                    </td>
+                    <td colspan="2" v-for="day in getAllDays()">{{day | longDateToDay}}</td>
+                </tr>
+                <tr>
+                    <td v-for="i in getAllDays().length * 2" v-text="i & 1 == 1 ?'A班': 'B班'"></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="t in tem_datas">
+                    <td class="thead-col" v-text="t.flag + '℃'"></td>
+                    <td v-for="i in getAllDays().length * 2"
+                        v-text="t.flag == ~~(t.tem_data[date_list[i]]) ? t.tem_data[date_list[i]] : ''"></td>
+                </tr>
+                <tr>
+                    <td class="thead-col">测试数据℃</td>
+                    <td v-for="i in getAllDays().length * 2"></td>
+                </tr>
+                <tr>
+                    <td class="thead-col">天气状况</td>
+                    <td v-for="i in getAllDays().length * 2"></td>
+                </tr>
+            </tbody>
+        </table>
+        <table style="height: 33%;">
+            <thead>
+                <tr>
+                    <td rowspan="2" class="thead-col">
+                        <img src="./src/th2.png" alt="">
+                    </td>
+                    <td colspan="2" v-for="day in getAllDays()">{{day | longDateToDay}}</td>
+                </tr>
+                <tr>
+                    <td v-for="i in getAllDays().length * 2" v-text="i & 1 == 1 ?'A班': 'B班'"></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(t, i) in hum_datas">
+                    <td rowspan="2" class="thead-col" v-if="i % 2 == 0"  v-text="t.flag + '% RH'"></td>
+                    <td v-for="n in getAllDays().length * 2"
+                        v-text="t.flag == ~~(t.hum_data[date_list[n]]) ? t.hum_data[date_list[n]] : ''"></td>
+                </tr>
+                <tr>
+                    <td rowspan="2" class="thead-col">测试数据(% RH)</td>
+                    <td v-for="i in getAllDays().length * 2"></td>
+                </tr>
+                <tr>
+                    <td v-for="i in getAllDays().length * 2"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="desc" style="float: left; margin-top:14px;">
+            <p> 说明： 1. 如相对湿度 &gt; 75% 采取相应措施（开风扇、除去物料 PE 膜、加大物料摆放间距 </p>
+            <p style="text-indent:10em">2. 仓库参照《仓库相对湿度点检表》作此表记录 (AM4:00/AM9:00)， 相对湿度管制范围 &lt; 85%</p>
+            <p style="text-indent:10em">3. 异常时记录人员反馈给当班线组长</p>
+        </div>
+
+        <div class="desc" style="float: right; height: 8%;">
+            <div style="margin-top: 30px; width: 750px;">
+                <span style="margin-right: 190px;">核准： </span>
+                <span style="margin-right: 190px;">审核：</span>
+                <span style="margin-right: 190px;">填表：</span></div>
+        </div>
+    </div>
+
+    <script>
+        var fDate = function (value) {
+            return value < 10 ? '0' + value : value;
+        }
+        Date.prototype.format = function () {
+            return this.getFullYear() + '-' + fDate(this.getMonth() + 1) + '-' + fDate(this.getDate());
+        };
+        var app = new Vue({
+            el: "#app",
+            data: {
+                title: '',
+                start_date: '',
+                end_date: '',
+                tem_data: {},
+                hum_data: {},
+                min_tem: 0,
+                max_tem: 0,
+                flag_tems: [],
+                flag_tem_stem: 1,
+                min_hum: 0,
+                max_hum: 0,
+                flag_hums: [],
+                flag_hum_stem: 10
+            },
+            methods: {
+                getAllDays() {
+                    var allDays = [];
+                    var a = (this.start_date || '').split('-');
+                    var b = (this.end_date || '').split('-');
+                    var uDb = new Date().setUTCFullYear(a[0], a[1] - 1, a[2]);
+                    var uDe = new Date().setUTCFullYear(b[0], b[1] - 1, b[2]);
+                    for (var i = uDb; i <= uDe; i = i + 24 * 60 * 60 * 1000) {
+                        allDays.push(new Date(parseInt(i)).format());
+                    }
+                    return allDays;
+                },
+                fill_flag_tem() {
+                    if (this.flag_tems.length == 0) {
+
+                        if (!this.max_tem)
+                            this.max_tem = Math.max(...Object.values(this.tem_data))
+                        if (!this.min_tem)
+                            this.min_tem = Math.min(...Object.values(this.tem_data))
+
+                        while (this.min_tem <= this.max_tem) {
+                            this.flag_tems.push(this.min_tem)
+                            this.min_tem = this.min_tem + this.flag_tem_stem
+                        }
+                    }
+                },
+                fill_flag_hum() {
+                    if (this.flag_hums.length == 0) {
+                        if (!this.max_hum)
+                            this.max_hum = Math.max(...Object.values(this.hum_data))
+                        if (!this.min_hum)
+                            this.min_hum = Math.min(...Object.values(this.hum_data))
+                        while (this.min_hum <= this.max_hum) {
+                            this.flag_hums.push(this.min_hum)
+                            this.flag_hums.push(this.min_hum)
+                            this.min_hum = this.min_hum += this.flag_hum_stem
+                        }
+                    }
+                }
+            },
+            filters: {
+                longDateToDay: function (longDate) {
+                    return fDate(new Date(Date.parse(longDate)).getDate());
+                },
+                longDateToMonth: function (longDate) {
+                    return fDate(new Date(Date.parse(longDate)).getMonth() + 1);
+                }
+            },
+            computed: {
+                date_list() {
+                    return Array.from(new Set(Object.keys(this.tem_data).concat(Object.keys(this.hum_data))))
+                },
+                tem_datas() {
+                    var t = []
+                    this.flag_tems.map((flag) => {
+                        t.push({
+                            flag, tem_data: this.tem_data
+                        })
+                    })
+                    return t
+                },
+                hum_datas() {
+                    var t = []
+                    this.flag_hums.map((flag) => {
+                        t.push({
+                            flag, hum_data: this.hum_data
+                        })
+                    })
+                    return t
+                }
+            },
+            mounted() {
+                this.fill_flag_tem()
+                this.fill_flag_hum()
+            },
+            created() {
+                this.title = "仓库温湿度走势记录表"
+                this.start_date = "2020-06-01"
+                this.end_date = "2020-06-30"
+
+                this.flag_tems = []
+                this.max_tem = ''
+                this.min_tem = ''
+                this.flag_tem_stem = 1
+
+                this.flag_hums = []
+                this.max_hum = 90
+                this.min_hum = 50
+                this.flag_hum_stem = 10
+
+                this.tem_data = {
+                    "2020-06-01-A": 22,
+                    "2020-06-01-B": 22,
+                    "2020-06-02-A": 23,
+                    "2020-06-02-B": 20,
+                    "2020-06-03-A": 25,
+                    "2020-06-03-B": 26,
+                    "2020-06-04-A": 32,
+                    "2020-06-04-B": 22,
+                    "2020-06-05-A": 31,
+                    "2020-06-05-B": 23,
+                    "2020-06-06-A": 24,
+                    "2020-06-06-B": 26,
+                    "2020-06-07-A": 20,
+                    "2020-06-07-B": 31,
+                    "2020-06-08-A": 31,
+                    "2020-06-08-B": 31,
+                    "2020-06-09-A": 31,
+                    "2020-06-09-B": 24,
+                    "2020-06-10-A": 31,
+                    "2020-06-10-B": 26,
+                    "2020-06-11-A": 31,
+                    "2020-06-11-B": 31,
+                    "2020-06-12-A": 31,
+                    "2020-06-12-B": 31,
+                    "2020-06-13-A": 31,
+                    "2020-06-13-B": 31,
+                    "2020-06-14-A": 31,
+                    "2020-06-14-B": 31,
+                    "2020-06-15-A": 31,
+                    "2020-06-15-B": 31,
+                    "2020-06-16-A": 31,
+                    "2020-06-16-B": 31,
+                    "2020-06-17-A": 31,
+                    "2020-06-17-B": 31,
+                }
+                this.hum_data = {
+                    "2020-06-01-A": 80,
+                    "2020-06-01-B": 80,
+                    "2020-06-02-A": 60,
+                    "2020-06-02-B": 60,
+                    "2020-06-03-A": 80,
+                    "2020-06-03-B": 80,
+                    "2020-06-04-A": 80,
+                    "2020-06-04-B": 80,
+                    "2020-06-05-A": 80,
+                    "2020-06-05-B": 80,
+                    "2020-06-06-A": 80,
+                    "2020-06-06-B": 70,
+                    "2020-06-07-A": 80,
+                    "2020-06-07-B": 80,
+                    "2020-06-08-A": 80,
+                    "2020-06-08-B": 70,
+                    "2020-06-09-A": 80,
+                    "2020-06-09-B": 80,
+                    "2020-06-10-A": 80,
+                    "2020-06-10-B": 80,
+                    "2020-06-11-A": 80,
+                    "2020-06-11-B": 80,
+                    "2020-06-12-A": 80,
+                    "2020-06-12-B": 70,
+                    "2020-06-13-A": 80,
+                    "2020-06-13-B": 90,
+                    "2020-06-14-A": 80,
+                    "2020-06-14-B": 80,
+                    "2020-06-15-A": 80,
+                    "2020-06-15-B": 90,
+                    "2020-06-16-A": 80,
+                    "2020-06-16-B": 80,
+                    "2020-06-17-A": 60,
+                    "2020-06-17-B": 80,
+                }
+            }
+        });
+    </script>
+</body>
+</head>
