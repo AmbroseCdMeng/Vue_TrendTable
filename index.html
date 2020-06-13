@@ -43,6 +43,7 @@
         table th {
             border: 1px solid #cad9ea;
             color: #666;
+			height:13px;
             max-height: 30px;
             width: 30px;
         }
@@ -92,7 +93,7 @@
                 <tr v-for="t in tem_datas">
                     <td class="thead-col" v-text="t.flag + '℃'"></td>
                     <td v-for="i in getAllDays().length * 2"
-                        v-text="t.flag == ~~(t.tem_data[date_list[i]]) ? t.tem_data[date_list[i]] : ''"></td>
+                        v-text="t.flag == tem_text_flag(Math.round(t.tem_data[date_list[i]])) ? t.tem_data[date_list[i]] : ''"></td>
                 </tr>
                 <tr>
                     <td class="thead-col">测试数据℃</td>
@@ -119,8 +120,10 @@
             <tbody>
                 <tr v-for="(t, i) in hum_datas">
                     <td rowspan="2" class="thead-col" v-if="i % 2 == 0"  v-text="t.flag + '% RH'"></td>
-                    <td v-for="n in getAllDays().length * 2"
-                        v-text="t.flag == ~~(t.hum_data[date_list[n]]) ? t.hum_data[date_list[n]] : ''"></td>
+                    <td v-for="n in getAllDays().length * 2" v-if="i % 2 == 0"
+                        v-text="t.flag == hum_text_flag(t.hum_data[date_list[n]]) ? t.hum_data[date_list[n]] : ''"></td>
+					<td v-for="n in getAllDays().length * 2" v-if="i % 2 == 1"
+                        v-text="t.flag == hum_text_flag(t.hum_data[date_list[n]]) ? '√' : ''"></td>
                 </tr>
                 <tr>
                     <td rowspan="2" class="thead-col">测试数据(% RH)</td>
@@ -168,9 +171,17 @@
                 min_hum: 0,// 最小湿度
                 max_hum: 0,// 最大湿度
                 flag_hums: [],//湿度数组
-                flag_hum_step: 10//湿度步长
+                flag_hum_step: 5//湿度步长
             },
             methods: {
+				//温度数据展示规则，可以根据需求自定义。
+			    tem_text_flag(n){
+					return this.flag_tems.find(i => Math.abs(n - i) < this.flag_tem_step);
+				},
+				//湿度数据展示规则，可以根据需求自定义
+				hum_text_flag(n){
+					return this.flag_hums.find(i => n <= i);
+				},
                 //根据日期区间获取所有日期，返回数组
                 getAllDays() {
                     var allDays = [];
@@ -186,15 +197,16 @@
                 //温度数组为空时，自动根据其他设定填充温度数组
                 fill_flag_tem() {
                     if (this.flag_tems.length == 0) {
-
                         if (!this.max_tem)
                             this.max_tem = Math.max(...Object.values(this.tem_data))
                         if (!this.min_tem)
                             this.min_tem = Math.min(...Object.values(this.tem_data))
-
+						//降序
                         while (this.min_tem <= this.max_tem) {
-                            this.flag_tems.push(this.min_tem)
-                            this.min_tem = this.min_tem + this.flag_tem_step
+							this.max_tem = parseFloat(this.max_tem)
+							this.min_tem = parseFloat(this.min_tem)
+                            this.flag_tems.push(this.max_tem)
+                            this.max_tem = (this.max_tem - this.flag_tem_step).toFixed(1)
                         }
                     }
                 },
@@ -205,10 +217,13 @@
                             this.max_hum = Math.max(...Object.values(this.hum_data))
                         if (!this.min_hum)
                             this.min_hum = Math.min(...Object.values(this.hum_data))
+						//升序
                         while (this.min_hum <= this.max_hum) {
+							this.min_hum = parseFloat(this.min_hum)
+							this.max_hum = parseFloat(this.max_hum)
                             this.flag_hums.push(this.min_hum)
                             this.flag_hums.push(this.min_hum)
-                            this.min_hum = this.min_hum += this.flag_hum_step
+                            this.min_hum = (this.min_hum += this.flag_hum_step).toFixed(1)
                         }
                     }
                 }
@@ -262,84 +277,84 @@
                 this.flag_tems = []
                 this.max_tem = ''
                 this.min_tem = ''
-                this.flag_tem_step = 1
+                this.flag_tem_step = 2
 
                 this.flag_hums = []
                 this.max_hum = 90
-                this.min_hum = 50
-                this.flag_hum_step = 10
+                this.min_hum = 55
+                this.flag_hum_step = 5
 
                 this.tem_data = {
-                    "2020-06-01-A": 22,
-                    "2020-06-01-B": 22,
-                    "2020-06-02-A": 23,
-                    "2020-06-02-B": 20,
-                    "2020-06-03-A": 25,
-                    "2020-06-03-B": 26,
-                    "2020-06-04-A": 32,
-                    "2020-06-04-B": 22,
-                    "2020-06-05-A": 31,
-                    "2020-06-05-B": 23,
-                    "2020-06-06-A": 24,
-                    "2020-06-06-B": 26,
-                    "2020-06-07-A": 20,
-                    "2020-06-07-B": 31,
-                    "2020-06-08-A": 31,
-                    "2020-06-08-B": 31,
-                    "2020-06-09-A": 31,
-                    "2020-06-09-B": 24,
-                    "2020-06-10-A": 31,
-                    "2020-06-10-B": 26,
-                    "2020-06-11-A": 31,
-                    "2020-06-11-B": 31,
-                    "2020-06-12-A": 31,
-                    "2020-06-12-B": 31,
-                    "2020-06-13-A": 31,
-                    "2020-06-13-B": 31,
-                    "2020-06-14-A": 31,
-                    "2020-06-14-B": 31,
-                    "2020-06-15-A": 31,
-                    "2020-06-15-B": 31,
-                    "2020-06-16-A": 31,
-                    "2020-06-16-B": 31,
-                    "2020-06-17-A": 31,
-                    "2020-06-17-B": 31,
+                    "2020-06-01-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-01-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-02-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-02-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-03-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-03-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-04-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-04-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-05-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-05-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-06-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-06-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-07-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-07-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-08-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-08-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-09-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-09-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-10-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-10-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-11-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-11-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-12-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-12-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-13-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-13-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-14-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-14-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-15-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-15-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-16-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-16-B": (Math.random()*20+10).toFixed(1),
+                    "2020-06-17-A": (Math.random()*20+10).toFixed(1),
+                    "2020-06-17-B": (Math.random()*20+10).toFixed(1),
                 }
                 this.hum_data = {
-                    "2020-06-01-A": 80,
-                    "2020-06-01-B": 80,
-                    "2020-06-02-A": 60,
-                    "2020-06-02-B": 60,
-                    "2020-06-03-A": 80,
-                    "2020-06-03-B": 80,
-                    "2020-06-04-A": 80,
-                    "2020-06-04-B": 80,
-                    "2020-06-05-A": 80,
-                    "2020-06-05-B": 80,
-                    "2020-06-06-A": 80,
-                    "2020-06-06-B": 70,
-                    "2020-06-07-A": 80,
-                    "2020-06-07-B": 80,
-                    "2020-06-08-A": 80,
-                    "2020-06-08-B": 70,
-                    "2020-06-09-A": 80,
-                    "2020-06-09-B": 80,
-                    "2020-06-10-A": 80,
-                    "2020-06-10-B": 80,
-                    "2020-06-11-A": 80,
-                    "2020-06-11-B": 80,
-                    "2020-06-12-A": 80,
-                    "2020-06-12-B": 70,
-                    "2020-06-13-A": 80,
-                    "2020-06-13-B": 90,
-                    "2020-06-14-A": 80,
-                    "2020-06-14-B": 80,
-                    "2020-06-15-A": 80,
-                    "2020-06-15-B": 90,
-                    "2020-06-16-A": 50,
-                    "2020-06-16-B": 80,
-                    "2020-06-17-A": 60,
-                    "2020-06-17-B": 80,
+                    "2020-06-01-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-01-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-02-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-02-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-03-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-03-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-04-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-04-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-05-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-05-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-06-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-06-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-07-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-07-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-08-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-08-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-09-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-09-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-10-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-10-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-11-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-11-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-12-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-12-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-13-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-13-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-14-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-14-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-15-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-15-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-16-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-16-B": (Math.random()*40+50).toFixed(1),
+                    "2020-06-17-A": (Math.random()*40+50).toFixed(1),
+                    "2020-06-17-B": (Math.random()*40+50).toFixed(1),
                 }
             }
         });
